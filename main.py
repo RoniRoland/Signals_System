@@ -13,8 +13,12 @@ def menuPrincipal():
         0.- Salir
 \n...................................................................\n"""
     )
-    option = int(input("Ingrese una opcion: "))
-    return option
+    while True:
+        try:
+            option = int(input("Ingrese una opcion: "))
+            return option
+        except ValueError:
+            print("Opcion incorrecta debe ser un numero")
 
 
 if __name__ == "__main__":

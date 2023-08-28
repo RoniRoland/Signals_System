@@ -41,6 +41,54 @@ def cargar_datos_desde_xml(xml_file):
         print("Nombre de la señal:", nombre_senal)
 
 
+def procesarXML():
+    procesadas = ListaEnlazada()
+    actual = lista_senales.cabeza
+
+    while actual:
+        nombre = actual.nombre
+        tiempo = actual.tiempo
+        amplitud = actual.amplitud
+        valor = int(actual.valor)
+
+        if valor > 0:
+            valor = 1
+
+        procesadas.agregar(nombre, tiempo, amplitud, str(valor))
+        actual = actual.siguiente
+
+    nombres_senales = procesadas.mostrar_nombres()
+
+    for nombre_senal in nombres_senales:
+        matriz = {}
+        actual = procesadas.cabeza
+        while actual:
+            if actual.nombre == nombre_senal:
+                tiempo = actual.tiempo
+                amplitud = actual.amplitud
+                valor = actual.valor
+
+                if tiempo not in matriz:
+                    matriz[tiempo] = {}
+                matriz[tiempo][amplitud] = valor
+
+            actual = actual.siguiente
+
+        print("\nMatriz de datos procesados para la señal", nombre_senal + ":")
+
+        # Imprimir encabezados de las amplitudes
+        amplitudes = sorted(matriz[list(matriz.keys())[0]].keys())
+        print("\t", "\t".join(["Ampl" + str(i + 1) for i in range(len(amplitudes))]))
+
+        # Imprimir valores en la matriz
+        for tiempo, valores in matriz.items():
+            print(
+                "T" + tiempo,
+                "\t",
+                "\t".join([valores.get(amplitud, "-") for amplitud in amplitudes]),
+            )
+
+
 if __name__ == "__main__":
     while True:
         print(
@@ -70,7 +118,9 @@ if __name__ == "__main__":
             if archivo is not None:
                 cargar_datos_desde_xml(archivo)
         elif option == 2:
-            break
+            procesarXML()
+            print("\nProcesamiento completo.")
+            continue
         elif option == 3:
             break
         elif option == 4:

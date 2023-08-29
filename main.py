@@ -196,7 +196,5 @@ if __name__ == "__main__":
                 print("La señal no existe.")
         elif option == 0:
             break
-        elif option == 0:
-            break
         else:
             print("Opción incorrecta")

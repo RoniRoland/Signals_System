@@ -1,5 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
+import subprocess
+
 from listaSimple import ListaEnlazada
 
 lista_senales = ListaEnlazada()
@@ -26,28 +28,30 @@ def cargar_datos_desde_xml(xml_file):
 
     for senal in root.findall("senal"):
         nombre = senal.get("nombre")
-        print("Nombre de la señal:", nombre)
+        # print("Nombre de la señal:", nombre)
         nombres_senales.add(nombre)
 
         for dato in senal.findall("dato"):
             tiempo = dato.get("t")
             amplitud = dato.get("A")
             valor = int(dato.text)
-            print("Tiempo:", tiempo, "Amplitud:", amplitud, "Valor interno:", valor)
+            # print("Tiempo:", tiempo, "Amplitud:", amplitud, "Valor interno:", valor)
             lista_senales.agregar(nombre, tiempo, amplitud, valor)
 
-    print("\nSeñales disponibles:")
-    for nombre_senal in nombres_senales:
-        print("Nombre de la señal:", nombre_senal)
+    # print("\nSeñales disponibles:")
+    # for nombre_senal in nombres_senales:
+    # print("Nombre de la señal:", nombre_senal)
 
 
 def procesarxml():
     if not lista_senales.cabeza:
         print("No hay datos cargados. Cargue un archivo primero.")
         return
-
+    print("Calculando la matriz binaria...")
+    print("Realizando suma de tuplas...")
     # Crear diccionario para almacenar los valores originales por señal
     valores_originales_por_senal = {}
+    matrices_finales_por_senal = {}
 
     # Llenar el diccionario con los valores originales por señal
     actual = lista_senales.cabeza
@@ -65,6 +69,7 @@ def procesarxml():
         actual = actual.siguiente
 
     # Crear matrices binarias por señal y calcular las matrices finales agrupadas
+
     for nombre, matriz_original in valores_originales_por_senal.items():
         matriz_binaria = [
             [1 if val > 0 else 0 for val in fila] for fila in matriz_original
@@ -83,26 +88,58 @@ def procesarxml():
                 for i in range(4):
                     matriz_final[index][i] += matriz_original[tiempo - 1][i]
 
-        # Mostrar las matrices binarias por señal
-        print("\nMatriz binaria", nombre)
-        print("\t", "  ".join("Ampl" + str(i + 1) for i in range(4)))
-        for tiempo, fila_binaria in enumerate(matriz_binaria):
-            print(
-                "T" + str(tiempo + 1), "\t", "  ".join(str(val) for val in fila_binaria)
+        matrices_finales_por_senal[nombre] = {
+            "amplitud": amplitud,
+            "matriz_final": matriz_final,
+            "grupos": grupos,
+        }
+    print("Procesado completado.")
+    return matrices_finales_por_senal
+
+
+def escribir_xml_final(matrices_finales_por_senal):
+    if not matrices_finales_por_senal:
+        print("No hay datos procesados. Procesa los datos primero en la opción 2.")
+        return
+
+    nombre_archivo_salida = input(
+        "Ingrese el nombre del archivo XML de salida (sin extensión .xml): "
+    )
+    archivo_salida = nombre_archivo_salida + ".xml"
+
+    with open(archivo_salida, "w", encoding="utf-8") as file:
+        file.write('<?xml version="1.0" encoding="utf-8"?>\n')
+        file.write("<senalesReducidas>\n")
+
+        for nombre_senal, datos_senal in matrices_finales_por_senal.items():
+            file.write(
+                f'    <senal nombre="{nombre_senal}" A="{datos_senal["amplitud"]}">\n'
             )
 
-        # Mostrar la matriz final agrupada por señal
-        print("\nMatriz final agrupada", nombre)
-        print("\t", "  ".join("Ampl" + str(i + 1) for i in range(4)))
-        for tiempo_grupo, fila_final in zip(grupos.values(), matriz_final):
-            print(
-                "T" + "".join(str(tiempo) for tiempo in tiempo_grupo),
-                "\t",
-                "  ".join(str(val) for val in fila_final),
-            )
+            for grupo_num, (tiempos, datos_grupo) in enumerate(
+                zip(datos_senal["grupos"].values(), datos_senal["matriz_final"]),
+                start=1,
+            ):
+                file.write(f'        <grupo g="{grupo_num}">\n')
+                file.write(
+                    f'            <tiempos>{",".join(str(tiempo) for tiempo in tiempos)}</tiempos>\n'
+                )
+                file.write(f"            <datosGrupo>\n")
+                for amplitud, valor in enumerate(datos_grupo, start=1):
+                    file.write(f'                <dato A="{amplitud}">{valor}</dato>\n')
+                file.write(f"            </datosGrupo>\n")
+                file.write(f"        </grupo>\n")
+
+            file.write(f"    </senal>\n")
+
+        file.write("</senalesReducidas>\n")
+
+    print(f"Archivo {archivo_salida} creado exitosamente.")
+    subprocess.call(["start", archivo_salida], shell=True)
 
 
 if __name__ == "__main__":
+    matrices_finales_por_senal = {}
     while True:
         print(
             """\n==================================================================
@@ -131,9 +168,9 @@ if __name__ == "__main__":
             if archivo is not None:
                 cargar_datos_desde_xml(archivo)
         elif option == 2:
-            procesarxml()
+            matrices_finales_por_senal = procesarxml()
         elif option == 3:
-            break
+            escribir_xml_final(matrices_finales_por_senal)
         elif option == 4:
             break
         elif option == 5:

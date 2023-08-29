@@ -5,6 +5,19 @@ from listaSimple import ListaEnlazada
 lista_senales = ListaEnlazada()
 
 
+def estudiante():
+    print(
+        """\n..................................................................\n
+        
+        Edgar Rolando Ramirez Lopez
+        201212891
+        Introduccion a la Programacion y Computacion 2
+        Ingenieria en Ciencias y Sistemas
+        4to Semestre
+\n...................................................................\n"""
+    )
+
+
 def elegirArchivo():
     while True:
         nombreArchivo = input("Escribe el nombre o ruta del archivo para cargar: ")
@@ -74,7 +87,7 @@ if __name__ == "__main__":
         elif option == 3:
             break
         elif option == 4:
-            break
+            estudiante()
         elif option == 5:
             print("\nSeñales disponibles:")
             lista_senales.mostrar_nombres()

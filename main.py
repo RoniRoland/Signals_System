@@ -42,6 +42,11 @@ def cargar_datos_desde_xml(xml_file):
     for senal in root.findall("senal"):
         nombre = senal.get("nombre")
         # print("Nombre de la señal:", nombre)
+
+        if nombre in nombres_senales:
+            print(f"Señal con nombre duplicado encontrada: {nombre}. Se ignorará.")
+            continue
+
         nombres_senales.add(nombre)
 
         for dato in senal.findall("dato"):
@@ -153,6 +158,7 @@ def escribir_xml_final(matrices_finales_por_senal):
 
 if __name__ == "__main__":
     matrices_finales_por_senal = {}
+    datos_cargados_y_procesados = False
     while True:
         print(
             """\n==================================================================
@@ -180,20 +186,24 @@ if __name__ == "__main__":
             archivo = elegirArchivo()
             if archivo is not None:
                 cargar_datos_desde_xml(archivo)
+                datos_cargados_y_procesados = False
         elif option == 2:
             matrices_finales_por_senal = procesarxml()
+            datos_cargados_y_procesados = True
         elif option == 3:
             escribir_xml_final(matrices_finales_por_senal)
         elif option == 4:
             estudiante()
         elif option == 5:
-            print("\nSeñales disponibles:")
-            lista_senales.mostrar_nombres()
-            nombre_senal = input("Ingrese el nombre de la señal a mostrar: ")
-            if lista_senales.buscar(nombre_senal):
-                lista_senales.mostrar_senal(nombre_senal)
+            if datos_cargados_y_procesados:
+                lista_senales.mostrar_nombres()
+                nombre_senal = input("Ingrese el nombre de la señal a mostrar: ")
+                if lista_senales.buscar(nombre_senal):
+                    lista_senales.mostrar_senal(nombre_senal)
+                else:
+                    print("La señal no existe.")
             else:
-                print("La señal no existe.")
+                print("No se han cargado ni procesado datos.")
         elif option == 0:
             break
         else:

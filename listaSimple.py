@@ -29,8 +29,7 @@ class ListaEnlazada:
         while actual:
             nombres.add(actual.nombre)
             actual = actual.siguiente
-        for nombre in nombres:
-            print("Nombre de la señal:", nombre)
+        return nombres
 
     def mostrar_senal(self, nombre_senal):
         actual = self.cabeza

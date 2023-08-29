@@ -1,6 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
 from listaSimple import ListaEnlazada
+import numpy as np
 
 lista_senales = ListaEnlazada()
 
@@ -32,7 +33,7 @@ def cargar_datos_desde_xml(xml_file):
         for dato in senal.findall("dato"):
             tiempo = dato.get("t")
             amplitud = dato.get("A")
-            valor = dato.text
+            valor = int(dato.text)
             print("Tiempo:", tiempo, "Amplitud:", amplitud, "Valor interno:", valor)
             lista_senales.agregar(nombre, tiempo, amplitud, valor)
 
@@ -41,51 +42,61 @@ def cargar_datos_desde_xml(xml_file):
         print("Nombre de la señal:", nombre_senal)
 
 
-def procesarXML():
-    procesadas = ListaEnlazada()
-    actual = lista_senales.cabeza
+def procesarxml():
+    if not lista_senales.cabeza:
+        print("No hay datos cargados. Cargue un archivo primero.")
+        return
 
+    # Crear diccionario para almacenar los valores originales por señal
+    valores_originales_por_senal = {}
+
+    # Llenar el diccionario con los valores originales por señal
+    actual = lista_senales.cabeza
     while actual:
         nombre = actual.nombre
-        tiempo = actual.tiempo
-        amplitud = actual.amplitud
+        tiempo = int(actual.tiempo)
         valor = int(actual.valor)
+        amplitud = int(actual.amplitud)
 
-        if valor > 0:
-            valor = 1
+        if nombre not in valores_originales_por_senal:
+            valores_originales_por_senal[nombre] = np.zeros((5, 4), dtype=int)
 
-        procesadas.agregar(nombre, tiempo, amplitud, str(valor))
+        valores_originales_por_senal[nombre][tiempo - 1][amplitud - 1] = valor
+
         actual = actual.siguiente
 
-    nombres_senales = procesadas.mostrar_nombres()
+    # Crear matrices binarias por señal y calcular las matrices finales agrupadas
+    for nombre, matriz_original in valores_originales_por_senal.items():
+        matriz_binaria = np.where(matriz_original > 0, 1, 0)
+        grupos = {}
 
-    for nombre_senal in nombres_senales:
-        matriz = {}
-        actual = procesadas.cabeza
-        while actual:
-            if actual.nombre == nombre_senal:
-                tiempo = actual.tiempo
-                amplitud = actual.amplitud
-                valor = actual.valor
+        for tiempo, fila_binaria in enumerate(matriz_binaria):
+            tupla_binaria = tuple(fila_binaria)
+            if tupla_binaria not in grupos:
+                grupos[tupla_binaria] = []
+            grupos[tupla_binaria].append(tiempo + 1)
 
-                if tiempo not in matriz:
-                    matriz[tiempo] = {}
-                matriz[tiempo][amplitud] = valor
+        matriz_final = np.zeros((len(grupos), 4), dtype=int)
+        for index, tiempo_grupo in enumerate(grupos.values()):
+            for tiempo in tiempo_grupo:
+                matriz_final[index] += matriz_original[tiempo - 1]
 
-            actual = actual.siguiente
-
-        print("\nMatriz de datos procesados para la señal", nombre_senal + ":")
-
-        # Imprimir encabezados de las amplitudes
-        amplitudes = sorted(matriz[list(matriz.keys())[0]].keys())
-        print("\t", "\t".join(["Ampl" + str(i + 1) for i in range(len(amplitudes))]))
-
-        # Imprimir valores en la matriz
-        for tiempo, valores in matriz.items():
+        # Mostrar las matrices binarias por señal
+        print("\nMatriz binaria", nombre)
+        print("\t", "  ".join("Ampl" + str(i + 1) for i in range(4)))
+        for tiempo, fila_binaria in enumerate(matriz_binaria):
             print(
-                "T" + tiempo,
+                "T" + str(tiempo + 1), "\t", "  ".join(str(val) for val in fila_binaria)
+            )
+
+        # Mostrar la matriz final agrupada por señal
+        print("\nMatriz final agrupada", nombre)
+        print("\t", "  ".join("Ampl" + str(i + 1) for i in range(4)))
+        for tiempo_grupo, fila_final in zip(grupos.values(), matriz_final):
+            print(
+                "T" + "".join(str(tiempo) for tiempo in tiempo_grupo),
                 "\t",
-                "\t".join([valores.get(amplitud, "-") for amplitud in amplitudes]),
+                "  ".join(str(val) for val in fila_final),
             )
 
 
@@ -118,9 +129,7 @@ if __name__ == "__main__":
             if archivo is not None:
                 cargar_datos_desde_xml(archivo)
         elif option == 2:
-            procesarXML()
-            print("\nProcesamiento completo.")
-            continue
+            procesarxml()
         elif option == 3:
             break
         elif option == 4:

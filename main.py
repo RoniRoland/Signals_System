@@ -41,6 +41,67 @@ def cargar_datos_desde_xml(xml_file):
         print("Nombre de la señal:", nombre_senal)
 
 
+def procesarxml():
+    if not lista_senales.cabeza:
+        print("No hay datos cargados. Cargue un archivo primero.")
+        return
+
+    # Crear diccionario para almacenar los valores originales por señal
+    valores_originales_por_senal = {}
+
+    # Llenar el diccionario con los valores originales por señal
+    actual = lista_senales.cabeza
+    while actual:
+        nombre = actual.nombre
+        tiempo = int(actual.tiempo)
+        valor = int(actual.valor)
+        amplitud = int(actual.amplitud)
+
+        if nombre not in valores_originales_por_senal:
+            valores_originales_por_senal[nombre] = [[0] * 4 for _ in range(5)]
+
+        valores_originales_por_senal[nombre][tiempo - 1][amplitud - 1] = valor
+
+        actual = actual.siguiente
+
+    # Crear matrices binarias por señal y calcular las matrices finales agrupadas
+    for nombre, matriz_original in valores_originales_por_senal.items():
+        matriz_binaria = [
+            [1 if val > 0 else 0 for val in fila] for fila in matriz_original
+        ]
+        grupos = {}
+
+        for tiempo, fila_binaria in enumerate(matriz_binaria):
+            tupla_binaria = tuple(fila_binaria)
+            if tupla_binaria not in grupos:
+                grupos[tupla_binaria] = []
+            grupos[tupla_binaria].append(tiempo + 1)
+
+        matriz_final = [[0] * 4 for _ in range(len(grupos))]
+        for index, tiempo_grupo in enumerate(grupos.values()):
+            for tiempo in tiempo_grupo:
+                for i in range(4):
+                    matriz_final[index][i] += matriz_original[tiempo - 1][i]
+
+        # Mostrar las matrices binarias por señal
+        print("\nMatriz binaria", nombre)
+        print("\t", "  ".join("Ampl" + str(i + 1) for i in range(4)))
+        for tiempo, fila_binaria in enumerate(matriz_binaria):
+            print(
+                "T" + str(tiempo + 1), "\t", "  ".join(str(val) for val in fila_binaria)
+            )
+
+        # Mostrar la matriz final agrupada por señal
+        print("\nMatriz final agrupada", nombre)
+        print("\t", "  ".join("Ampl" + str(i + 1) for i in range(4)))
+        for tiempo_grupo, fila_final in zip(grupos.values(), matriz_final):
+            print(
+                "T" + "".join(str(tiempo) for tiempo in tiempo_grupo),
+                "\t",
+                "  ".join(str(val) for val in fila_final),
+            )
+
+
 if __name__ == "__main__":
     while True:
         print(

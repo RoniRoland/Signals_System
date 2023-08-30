@@ -2,3 +2,6 @@ __pycache__/
 t1.xml
 t2.xml
 *.xml
+*.dot
+*.png
+grafo

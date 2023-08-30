@@ -47,7 +47,7 @@ def procesarxml():
     if not lista_senales.cabeza:
         print("No hay datos cargados. Cargue un archivo primero.")
         return []
-
+    print("Calculando la matriz binaria...")
     matrices_finales_por_senal = []
 
     actual = lista_senales.cabeza
@@ -57,32 +57,51 @@ def procesarxml():
         valor = int(actual.valor)
         amplitud = int(actual.amplitud)
 
-        if (
-            not matrices_finales_por_senal
-            or matrices_finales_por_senal[-1]["nombre"] != nombre
-        ):
+        # Buscar la señal en la lista de señales procesadas
+        senal_existente = next(
+            (
+                senal
+                for senal in matrices_finales_por_senal
+                if senal["nombre"] == nombre
+            ),
+            None,
+        )
+
+        if senal_existente:
+            if amplitud > senal_existente["amplitud"]:
+                senal_existente["amplitud"] = amplitud
+                for fila in senal_existente["matriz_original"]:
+                    fila.extend([0] * (amplitud - len(fila)))
+
+            if tiempo > len(senal_existente["matriz_original"]):
+                senal_existente["matriz_original"].extend(
+                    [
+                        [0] * senal_existente["amplitud"]
+                        for _ in range(tiempo - len(senal_existente["matriz_original"]))
+                    ]
+                )
+
+            senal_existente["grupos"].setdefault(tiempo, [])
+            senal_existente["grupos"][tiempo].append((amplitud, valor))
+            senal_existente["matriz_original"][tiempo - 1][amplitud - 1] = valor
+        else:
+            matriz_original = [[0] * amplitud for _ in range(tiempo)]
+            matriz_original[tiempo - 1][amplitud - 1] = valor
+
             matrices_finales_por_senal.append(
                 {
                     "nombre": nombre,
                     "amplitud": amplitud,
-                    "matriz_original": [[0] * 4 for _ in range(5)],
-                    "grupos": {},
+                    "matriz_original": matriz_original,
+                    "grupos": {tiempo: [(amplitud, valor)]},
                 }
             )
 
-        matrices_finales_por_senal[-1]["grupos"].setdefault(tiempo, [])
-        matrices_finales_por_senal[-1]["grupos"][tiempo].append((amplitud, valor))
-        matrices_finales_por_senal[-1]["matriz_original"][tiempo - 1][
-            amplitud - 1
-        ] = valor
-
         actual = actual.siguiente
 
+    print("Realizando suma de tuplas...")
     for senal in matrices_finales_por_senal:
         matriz_original = senal["matriz_original"]
-        matriz_binaria = [
-            [1 if val > 0 else 0 for val in fila] for fila in matriz_original
-        ]
         grupos_dict = {}
 
         for tiempo, grupo_data in senal["grupos"].items():
@@ -93,11 +112,14 @@ def procesarxml():
                 grupos_dict[tupla_binaria] = []
             grupos_dict[tupla_binaria].append(tiempo)
 
-        matriz_final = [[0] * 4 for _ in range(len(grupos_dict))]
-        for index, tiempo_grupo in enumerate(grupos_dict.values()):
+        matriz_final = []
+
+        for tupla_binaria, tiempo_grupo in grupos_dict.items():
+            new_row = [0] * senal["amplitud"]
             for tiempo in tiempo_grupo:
                 for amplitud, valor in senal["grupos"][tiempo]:
-                    matriz_final[index][amplitud - 1] += valor
+                    new_row[amplitud - 1] += valor
+            matriz_final.append(new_row)
 
         senal["matriz_final"] = matriz_final
         senal["grupos"] = grupos_dict
@@ -134,9 +156,11 @@ def escribir_xml_final(matrices_finales_por_senal):
                 file.write(f'        <grupo g="{grupo_num}">\n')
                 file.write(f"            <tiempos>{tiempos}</tiempos>\n")
                 file.write(f"            <datosGrupo>\n")
-                for amplitud_valor in matriz_final[grupo_num - 1]:
+                for amplitud_valor, valor in enumerate(
+                    matriz_final[grupo_num - 1], start=1
+                ):
                     file.write(
-                        f'                <dato A="{amplitud_valor + 1}">{amplitud_valor}</dato>\n'
+                        f'                <dato A="{amplitud_valor}">{valor}</dato>\n'
                     )
                 file.write(f"            </datosGrupo>\n")
                 file.write(f"        </grupo>\n")

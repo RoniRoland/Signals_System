@@ -43,7 +43,114 @@ def cargar_datos_desde_xml(xml_file):
     # print("Nombre de la señal:", nombre_senal)
 
 
+def procesarxml():
+    if not lista_senales.cabeza:
+        print("No hay datos cargados. Cargue un archivo primero.")
+        return []
+
+    matrices_finales_por_senal = []
+
+    actual = lista_senales.cabeza
+    while actual:
+        nombre = actual.nombre
+        tiempo = int(actual.tiempo)
+        valor = int(actual.valor)
+        amplitud = int(actual.amplitud)
+
+        if (
+            not matrices_finales_por_senal
+            or matrices_finales_por_senal[-1]["nombre"] != nombre
+        ):
+            matrices_finales_por_senal.append(
+                {
+                    "nombre": nombre,
+                    "amplitud": amplitud,
+                    "matriz_original": [[0] * 4 for _ in range(5)],
+                    "grupos": {},
+                }
+            )
+
+        matrices_finales_por_senal[-1]["grupos"].setdefault(tiempo, [])
+        matrices_finales_por_senal[-1]["grupos"][tiempo].append((amplitud, valor))
+        matrices_finales_por_senal[-1]["matriz_original"][tiempo - 1][
+            amplitud - 1
+        ] = valor
+
+        actual = actual.siguiente
+
+    for senal in matrices_finales_por_senal:
+        matriz_original = senal["matriz_original"]
+        matriz_binaria = [
+            [1 if val > 0 else 0 for val in fila] for fila in matriz_original
+        ]
+        grupos_dict = {}
+
+        for tiempo, grupo_data in senal["grupos"].items():
+            tupla_binaria = tuple(
+                1 if v > 0 else 0 for v in matriz_original[tiempo - 1]
+            )
+            if tupla_binaria not in grupos_dict:
+                grupos_dict[tupla_binaria] = []
+            grupos_dict[tupla_binaria].append(tiempo)
+
+        matriz_final = [[0] * 4 for _ in range(len(grupos_dict))]
+        for index, tiempo_grupo in enumerate(grupos_dict.values()):
+            for tiempo in tiempo_grupo:
+                for amplitud, valor in senal["grupos"][tiempo]:
+                    matriz_final[index][amplitud - 1] += valor
+
+        senal["matriz_final"] = matriz_final
+        senal["grupos"] = grupos_dict
+
+    print("Procesado completado.")
+    return matrices_finales_por_senal
+
+
+def escribir_xml_final(matrices_finales_por_senal):
+    if not matrices_finales_por_senal:
+        print("No hay datos procesados. Procesa los datos primero en la opción 2.")
+        return
+
+    nombre_archivo_salida = input(
+        "Ingrese el nombre del archivo XML de salida (sin extensión .xml): "
+    )
+    archivo_salida = nombre_archivo_salida + ".xml"
+
+    with open(archivo_salida, "w", encoding="utf-8") as file:
+        file.write('<?xml version="1.0" encoding="utf-8"?>\n')
+        file.write("<senalesReducidas>\n")
+
+        for senal in matrices_finales_por_senal:
+            nombre_senal = senal["nombre"]
+            matriz_final = senal["matriz_final"]
+            amplitud_senal = senal["amplitud"]
+
+            file.write(f'    <senal nombre="{nombre_senal}" A="{amplitud_senal}">\n')
+
+            for grupo_num, (tupla_binaria, tiempo_grupo) in enumerate(
+                senal["grupos"].items(), start=1
+            ):
+                tiempos = ",".join(str(tiempo) for tiempo in tiempo_grupo)
+                file.write(f'        <grupo g="{grupo_num}">\n')
+                file.write(f"            <tiempos>{tiempos}</tiempos>\n")
+                file.write(f"            <datosGrupo>\n")
+                for amplitud_valor in matriz_final[grupo_num - 1]:
+                    file.write(
+                        f'                <dato A="{amplitud_valor + 1}">{amplitud_valor}</dato>\n'
+                    )
+                file.write(f"            </datosGrupo>\n")
+                file.write(f"        </grupo>\n")
+
+            file.write(f"    </senal>\n")
+
+        file.write("</senalesReducidas>\n")
+
+    print(f"Archivo {archivo_salida} creado exitosamente.")
+    subprocess.call(["start", archivo_salida], shell=True)
+
+
 if __name__ == "__main__":
+    matrices_finales_por_senal = []
     while True:
         print(
             """\n==================================================================
@@ -72,9 +179,9 @@ if __name__ == "__main__":
             if archivo is not None:
                 cargar_datos_desde_xml(archivo)
         elif option == 2:
-            break
+            matrices_finales_por_senal = procesarxml()
         elif option == 3:
-            break
+            escribir_xml_final(matrices_finales_por_senal)
         elif option == 4:
             break
         elif option == 5:

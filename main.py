@@ -1,7 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
 import subprocess
-import graphviz
+from graphviz import Digraph
 
 from listaSimple import ListaEnlazada
 
@@ -236,6 +236,7 @@ if __name__ == "__main__":
                 nombre_senal = input("Ingrese el nombre de la señal a mostrar: ")
                 if lista_senales.buscar(nombre_senal):
                     lista_senales.mostrar_senal(nombre_senal)
+                    lista_senales.generateGraphvizCode(nombre_senal)
                 else:
                     print("La señal no existe.")
             else:

@@ -1,4 +1,7 @@
 from nodo import Nodo
+import subprocess
+from os import startfile
+import graphviz
 
 
 class ListaEnlazada:
@@ -51,3 +54,47 @@ class ListaEnlazada:
                 return
             actual = actual.siguiente
         print("La señal no fue encontrada.")
+
+    def writeNodes(self, f):
+        aux = self.cabeza
+        count = 1
+
+        while aux is not None:
+            f.write(f'node{count} [shape=oval, label=" {aux.valor} "]\n')
+            aux = aux.siguiente
+            count += 1
+
+        aux = self.cabeza
+        i = 1
+        while aux.siguiente is not None:
+            f.write(f"node{i} -> node{i + 1}\n")
+            aux = aux.siguiente
+            i += 1
+
+    def generateGraphvizCode(self, nombre_senal):
+        fullNameTxt = f"{nombre_senal}.dot"
+        fullNameImg = f"{nombre_senal}.jpg"
+
+        try:
+            f = open(fullNameTxt, "w")
+            f.write("digraph G {\n")
+            f.write("rankdir=TB;\n")
+            f.write(f'nodeRoot [shape=circle, label=" {nombre_senal} "]\n')
+            f.write('nodeTiempo [shape=circle, label=" t=n  "]\n')
+            f.write('nodeAmplitud [shape=circle, label=" a=n  "]\n')
+            f.write("nodeRoot -> nodeTiempo\n")
+            f.write("nodeRoot -> nodeAmplitud\n")
+            f.write(
+                "nodeRoot -> node1\n"
+            )  # Cambia node1 por el número correcto de inicio
+            self.writeNodes(f)
+            f.write("}")
+            f.close()
+
+            command = ["dot", "-Tjpg", fullNameTxt, "-o", fullNameImg]
+            subprocess.call(command)
+
+            startfile(fullNameImg)
+        except:
+            print("Error al generar el gráfico.")
+            f.close()

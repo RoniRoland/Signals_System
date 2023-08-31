@@ -1,10 +1,12 @@
 import os
 import xml.etree.ElementTree as ET
 import subprocess
+import graphviz
 
 from listaSimple import ListaEnlazada
 
 lista_senales = ListaEnlazada()
+datos_cargados_y_procesados = False
 
 
 def estudiante():

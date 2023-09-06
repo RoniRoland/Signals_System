@@ -43,24 +43,30 @@ def cargar_datos_desde_xml(xml_file):
 
     for senal in root.findall("senal"):
         nombre = senal.get("nombre")
-        # print("Nombre de la señal:", nombre)
-
-        if nombre in nombres_senales:
-            print(f"Señal con nombre duplicado encontrada: {nombre}. Se ignorará.")
-            continue
-
-        nombres_senales.add(nombre)
 
         for dato in senal.findall("dato"):
             tiempo = dato.get("t")
             amplitud = dato.get("A")
             valor = int(dato.text)
-            # print("Tiempo:", tiempo, "Amplitud:", amplitud, "Valor interno:", valor)
-            lista_senales.agregar(nombre, tiempo, amplitud, valor)
 
-    # print("\nSeñales disponibles:")
-    # for nombre_senal in nombres_senales:
-    # print("Nombre de la señal:", nombre_senal)
+            if tiempo <= 0 or tiempo > 3600:
+                print(
+                    f"Advertencia: Tiempo fuera del rango permitido (1-3600) en la señal {nombre}. Se ignorará."
+                )
+                continue
+
+            if amplitud <= 0 or amplitud > 130:
+                print(
+                    f"Advertencia: Amplitud fuera del rango permitido (1-130) en la señal {nombre}. Se ignorará."
+                )
+                continue
+
+            if nombre in nombres_senales:
+                # Buscar el nodo existente con el mismo nombre y eliminarlo
+                lista_senales.delete_node(nombre, tiempo, amplitud)
+
+            nombres_senales.add(nombre)
+            lista_senales.agregar(nombre, tiempo, amplitud, valor)
 
 
 def procesarxml():

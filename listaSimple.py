@@ -26,6 +26,27 @@ class ListaEnlazada:
             actual = actual.siguiente
         return False
 
+    def delete_node(self, nombre, tiempo, amplitud):
+        if self.cabeza is None:
+            return
+        if (
+            self.cabeza.nombre == nombre
+            and self.cabeza.tiempo == tiempo
+            and self.cabeza.amplitud == amplitud
+        ):
+            self.cabeza = self.cabeza.siguiente
+            return
+        current = self.cabeza
+        while current.siguiente:
+            if (
+                current.siguiente.nombre == nombre
+                and current.siguiente.tiempo == tiempo
+                and current.siguiente.amplitud == amplitud
+            ):
+                current.siguiente = current.siguiente.siguiente
+                return
+            current = current.siguiente
+
     def mostrar_nombres(self):
         nombres = set()
         actual = self.cabeza
